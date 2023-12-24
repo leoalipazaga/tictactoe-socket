@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import { Server } from 'socket.io';
 
 dotenv.config();
-
+const MAX_PLAYERS = 2;
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
@@ -21,16 +21,14 @@ app.use(express.json({ limit: '50mb' }));
 io.on('connection', (socket) => {
   const player = socket.handshake.auth;
 
-  socket.on('join game', () => {
-    // const connectedSockets = io.sockets.adapter.rooms.get(player.gameId);
-    // const socketRooms = Array.from(socket.rooms.values()).filter(
-    //   (r) => r !== socket.id
-    // );
-    // if (socketRooms.length > 0 || connectedSockets?.size === 2) {
-    //   return socket.emit('join game error', {
-    //     error: 'Room is full, please choose another one',
-    //   });
-    // }
+  socket.on('join game', async () => {
+    const connectedSockets = await io.in(player.gameId).fetchSockets();
+
+    if (connectedSockets?.length >= MAX_PLAYERS) {
+      return socket.emit('join:game:error', {
+        error: 'Room is full, please choose another one',
+      });
+    }
 
     socket.join(player.gameId);
   });
