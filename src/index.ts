@@ -22,15 +22,15 @@ io.on('connection', (socket) => {
   const player = socket.handshake.auth;
 
   socket.on('join game', () => {
-    const connectedSockets = io.sockets.adapter.rooms.get(player.gameId);
-    const socketRooms = Array.from(socket.rooms.values()).filter(
-      (r) => r !== socket.id
-    );
-    if (socketRooms.length > 0 || connectedSockets?.size === 2) {
-      return socket.emit('join game error', {
-        error: 'Room is full, please choose another one',
-      });
-    }
+    // const connectedSockets = io.sockets.adapter.rooms.get(player.gameId);
+    // const socketRooms = Array.from(socket.rooms.values()).filter(
+    //   (r) => r !== socket.id
+    // );
+    // if (socketRooms.length > 0 || connectedSockets?.size === 2) {
+    //   return socket.emit('join game error', {
+    //     error: 'Room is full, please choose another one',
+    //   });
+    // }
 
     socket.join(player.gameId);
   });
