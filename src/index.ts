@@ -10,26 +10,37 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   maxHttpBufferSize: 1000,
+  connectionStateRecovery: {},
   cors: { origin: process.env.CLIENT_URL },
 });
 const PORT = process.env.PORT ?? 4000;
 
 app.use(morgan('dev'));
 
-app.use(express.json({ limit: '50mb' }));
+io.use((socket, next) => {
+  const player = socket.handshake.auth;
+  const isAdmin = player.turn === 'X';
+  if (isAdmin) {
+    return next();
+  }
+  if (!io.of('/').adapter.rooms.has(player.gameId)) {
+    return next(new Error('socket_not_exist'));
+  }
+  next();
+});
+
+io.use(async (socket, next) => {
+  const player = socket.handshake.auth;
+  const connectedSockets = await io.in(player.gameId).fetchSockets();
+  if (connectedSockets?.length >= MAX_PLAYERS) {
+    return next(new Error('room_full'));
+  }
+  next();
+});
 
 io.on('connection', (socket) => {
   const player = socket.handshake.auth;
-
   socket.on('join game', async () => {
-    const connectedSockets = await io.in(player.gameId).fetchSockets();
-
-    if (connectedSockets?.length >= MAX_PLAYERS) {
-      return socket.emit('join:game:error', {
-        error: 'Room is full, please choose another one',
-      });
-    }
-
     socket.join(player.gameId);
   });
 
